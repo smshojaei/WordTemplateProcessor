@@ -3,22 +3,25 @@ using WordTemplateEngine;
 
 Console.WriteLine("Hello, World!");
 
-var processor = new Engine();
+var processor = new WordTemplateProcessor();
 
 var templateBytes = File.ReadAllBytes("d:\\Temp\\doc01.docx");
 
 var tags = new Dictionary<string, string>
 {
-    { "@@Name@@", "محسن" },
-    { "@@Date@@", "1403/04/14" }
+    { "Name", "محسن" },
+    { "Date", "1403/04/14" }
 };
 
 var tableData = new Dictionary<string, List<Dictionary<string, string>>>
 {
     ["Employees"] = new List<Dictionary<string, string>>
     {
-        new() { ["Name"] = "علی", ["Age"] = "40", ["Remark"] = "این برای تست 123 است." },
-        new() { ["Name"] = "سارا", ["Age"] = "30", ["Remark"] = "this is 123 test. " }
+        new() { ["EName"] = "علی", ["EAge"] = "40", ["ERemark"] = "این برای تست 123 است." },
+      new() { ["EName"] = "سارا", ["EAge"] = "30" },
+        new() { ["EName"] = "علی", ["EAge"] = "40", ["ERemark"] = "این برای تست 123 است." },
+        new() { ["EName"] = "علی", ["EAge"] = "40", ["ERemark"] = "این برای تست 123 است." },
+        new() { ["EName"] = "علی", ["EAge"] = "40", ["ERemark"] = "این برای تست 123 است." }
     }
 };
 
