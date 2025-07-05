@@ -63,7 +63,7 @@ namespace WordTemplateEngine.Tests
         public void FillTemplate_SimpleTextReplacement_ReplacesTag()
         {
             byte[] template = CreateSimpleDocWithText("Hello @@Name@@!");
-            var textPlaceholders = new Dictionary<string, string> { { "@@Name@@", "World" } };
+            var textPlaceholders = new Dictionary<string, string> { { "Name", "World" } }; // Changed key
 
             byte[] result = wordEngine.FillTemplate(template, textPlaceholders, null);
 
@@ -77,9 +77,9 @@ namespace WordTemplateEngine.Tests
             byte[] template = CreateSimpleDocWithText("@@Greeting@@, @@User@@. Today is @@Date@@.");
             var textPlaceholders = new Dictionary<string, string>
             {
-                { "@@Greeting@@", "Hi" },
-                { "@@User@@", "Jules" },
-                { "@@Date@@", "2024-07-05" }
+                { "Greeting", "Hi" }, // Changed key
+                { "User", "Jules" },   // Changed key
+                { "Date", "2024-07-05" } // Changed key
             };
 
             byte[] result = wordEngine.FillTemplate(template, textPlaceholders, null);
@@ -91,7 +91,7 @@ namespace WordTemplateEngine.Tests
         public void FillTemplate_TagNotFound_LeavesTextAsIs()
         {
             byte[] template = CreateSimpleDocWithText("Hello @@Name@@!");
-            var textPlaceholders = new Dictionary<string, string> { { "@@NonExistentTag@@", "World" } };
+            var textPlaceholders = new Dictionary<string, string> { { "NonExistentTag", "World" } }; // Changed key
 
             byte[] result = wordEngine.FillTemplate(template, textPlaceholders, null);
 
@@ -102,7 +102,7 @@ namespace WordTemplateEngine.Tests
         public void FillTemplate_EmptyValue_ReplacesTagWithEmptyString()
         {
             byte[] template = CreateSimpleDocWithText("Hello @@Name@@!");
-            var textPlaceholders = new Dictionary<string, string> { { "@@Name@@", "" } };
+            var textPlaceholders = new Dictionary<string, string> { { "Name", "" } }; // Changed key
 
             byte[] result = wordEngine.FillTemplate(template, textPlaceholders, null);
 
@@ -113,7 +113,7 @@ namespace WordTemplateEngine.Tests
         public void FillTemplate_NullValue_ReplacesTagWithEmptyString()
         {
             byte[] template = CreateSimpleDocWithText("Hello @@Name@@!");
-            var textPlaceholders = new Dictionary<string, string> { { "@@Name@@", null } };
+            var textPlaceholders = new Dictionary<string, string> { { "Name", null } }; // Changed key
 
             byte[] result = wordEngine.FillTemplate(template, textPlaceholders, null);
 
@@ -124,7 +124,7 @@ namespace WordTemplateEngine.Tests
         public void FillTemplate_UnicodeCharacters_ReplacesCorrectly()
         {
             byte[] template = CreateSimpleDocWithText("نام: @@FullName@@"); // Persian: "Name: @@FullName@@"
-            var textPlaceholders = new Dictionary<string, string> { { "@@FullName@@", "جولیا" } }; // Persian: "Julia"
+            var textPlaceholders = new Dictionary<string, string> { { "FullName", "جولیا" } }; // Persian: "Julia" // Changed key
 
             byte[] result = wordEngine.FillTemplate(template, textPlaceholders, null);
 
@@ -136,7 +136,7 @@ namespace WordTemplateEngine.Tests
         {
             // Simulating a tag split like "@@Na" + "me@@"
             byte[] template = CreateDocWithSplitText("Hello @@Na", "me@@", "!");
-            var textPlaceholders = new Dictionary<string, string> { { "@@Name@@", "SplitWorld" } };
+            var textPlaceholders = new Dictionary<string, string> { { "Name", "SplitWorld" } }; // Changed key
 
             byte[] result = wordEngine.FillTemplate(template, textPlaceholders, null);
             string resultText = GetDocumentText(result);
@@ -165,7 +165,7 @@ namespace WordTemplateEngine.Tests
                     mainPart.Document.Save();
                     byte[] template = mem.ToArray();
 
-                    var textPlaceholders = new Dictionary<string, string> { { "@@Value@@", "Correct" } };
+                    var textPlaceholders = new Dictionary<string, string> { { "Value", "Correct" } }; // Changed key
                     byte[] result = wordEngine.FillTemplate(template, textPlaceholders, null);
                     string resultText = GetDocumentText(result);
 
@@ -273,8 +273,8 @@ namespace WordTemplateEngine.Tests
                     tableId,
                     new List<Dictionary<string, string>>
                     {
-                        new Dictionary<string, string> { { "@@Name@@", "Alice" }, { "@@Age@@", "30" } },
-                        new Dictionary<string, string> { { "@@Name@@", "Bob" }, { "@@Age@@", "25" } }
+                        new Dictionary<string, string> { { "Name", "Alice" }, { "Age", "30" } }, // Changed keys
+                        new Dictionary<string, string> { { "Name", "Bob" }, { "Age", "25" } }   // Changed keys
                     }
                 }
             };
@@ -308,8 +308,8 @@ namespace WordTemplateEngine.Tests
                     tableId,
                     new List<Dictionary<string, string>>
                     {
-                        new Dictionary<string, string> { { "@@ID@@", "1" }, { "@@Name@@", "Laptop" } }, // Price missing
-                        new Dictionary<string, string> { { "@@Name@@", "Mouse" }, { "@@Price@@", "20" } } // ID missing
+                        new Dictionary<string, string> { { "ID", "1" }, { "Name", "Laptop" } }, // Price missing, Changed keys
+                        new Dictionary<string, string> { { "Name", "Mouse" }, { "Price", "20" } } // ID missing, Changed keys
                     }
                 }
             };
@@ -359,7 +359,7 @@ namespace WordTemplateEngine.Tests
                     "NonExistentTable", // Data for a table not in the template
                     new List<Dictionary<string, string>>
                     {
-                        new Dictionary<string, string> { { "@@OrderID@@", "100" }, { "@@Amount@@", "500" } }
+                        new Dictionary<string, string> { { "OrderID", "100" }, { "Amount", "500" } } // Changed keys
                     }
                 }
             };
@@ -421,15 +421,15 @@ namespace WordTemplateEngine.Tests
                     table1Id,
                     new List<Dictionary<string, string>>
                     {
-                        new Dictionary<string, string> { { "@@Name@@", "Eve" }, { "@@Role@@", "Engineer" } }
+                        new Dictionary<string, string> { { "Name", "Eve" }, { "Role", "Engineer" } } // Changed keys
                     }
                 },
                 {
                     table2Id,
                     new List<Dictionary<string, string>>
                     {
-                        new Dictionary<string, string> { { "@@DeptName@@", "IT" }, { "@@Manager@@", "Adam" } },
-                        new Dictionary<string, string> { { "@@DeptName@@", "HR" }, { "@@Manager@@", "Olivia" } }
+                        new Dictionary<string, string> { { "DeptName", "IT" }, { "Manager", "Adam" } }, // Changed keys
+                        new Dictionary<string, string> { { "DeptName", "HR" }, { "Manager", "Olivia" } } // Changed keys
                     }
                 }
             };
