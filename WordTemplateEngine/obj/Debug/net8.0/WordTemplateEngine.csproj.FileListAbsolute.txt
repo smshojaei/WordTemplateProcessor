@@ -1,0 +1,13 @@
+/app/WordTemplateEngine/obj/Debug/net8.0/WordTemplateEngine.csproj.AssemblyReference.cache
+/app/WordTemplateEngine/obj/Debug/net8.0/WordTemplateEngine.GeneratedMSBuildEditorConfig.editorconfig
+/app/WordTemplateEngine/obj/Debug/net8.0/WordTemplateEngine.AssemblyInfoInputs.cache
+/app/WordTemplateEngine/obj/Debug/net8.0/WordTemplateEngine.AssemblyInfo.cs
+/app/WordTemplateEngine/obj/Debug/net8.0/WordTemplateEngine.csproj.CoreCompileInputs.cache
+/app/WordTemplateEngine/obj/Debug/net8.0/WordTemplateEngine.sourcelink.json
+/app/WordTemplateEngine/bin/Debug/net8.0/WordTemplateEngine.deps.json
+/app/WordTemplateEngine/bin/Debug/net8.0/WordTemplateEngine.dll
+/app/WordTemplateEngine/bin/Debug/net8.0/WordTemplateEngine.pdb
+/app/WordTemplateEngine/obj/Debug/net8.0/WordTemplateEngine.dll
+/app/WordTemplateEngine/obj/Debug/net8.0/refint/WordTemplateEngine.dll
+/app/WordTemplateEngine/obj/Debug/net8.0/WordTemplateEngine.pdb
+/app/WordTemplateEngine/obj/Debug/net8.0/ref/WordTemplateEngine.dll
