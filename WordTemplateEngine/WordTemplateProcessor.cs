@@ -11,8 +11,8 @@ namespace WordTemplateEngine
 {
     public class WordTemplateProcessor
     {
-        const string fTag = "@@";
-        const string tTag = "@@";
+        const string fTag = "@";
+        const string tTag = "@";
 
         public byte[] FillTemplate(byte[] templateData, Dictionary<string, string>? textPlaceholders, Dictionary<string, List<Dictionary<string, string>>>? tablePlaceholders)
         {
@@ -198,9 +198,8 @@ namespace WordTemplateEngine
             var body = document.Body;
             if (body == null) return;
 
-            var tables = body.Elements<Table>().ToList();
+            var tables = body.Descendants<Table>().ToList();
             if (!tables.Any()) return;
-
             foreach (var tableEntry in tableData)
             {
                 string tableNameIdentifier = $"{fTag}Table:{tableEntry.Key}{tTag}";
