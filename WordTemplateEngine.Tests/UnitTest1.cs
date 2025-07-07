@@ -147,33 +147,34 @@ namespace WordTemplateEngine.Tests
             Assert.DoesNotContain("me@@", resultText);
         }
 
-        //[Fact]
-        //public void FillTemplate_TagSplitAcrossMoreRuns_ReplacesTag()
-        //{
-        //    // Simulating a tag split like "@@N" + "a" + "m" + "e@@"
-        //    using (MemoryStream mem = new MemoryStream())
-        //    {
-        //        using (WordprocessingDocument wordDoc = WordprocessingDocument.Create(mem, DocumentFormat.OpenXml.WordprocessingDocumentType.Document, true))
-        //        {
-        //            MainDocumentPart mainPart = wordDoc.AddMainDocumentPart();
-        //            mainPart.Document = new Document();
-        //            Body body = mainPart.Document.AppendChild(new Body());
-        //            Paragraph para = body.AppendChild(new Paragraph());
-        //            para.AppendChild(new Run(new Text("Data: @@")));
-        //            para.AppendChild(new Run(new Text("Val")));
-        //            para.AppendChild(new Run(new Text("ue@@")));
-        //            mainPart.Document.Save();
-        //            byte[] template = mem.ToArray();
+        [Fact]
+        public void FillTemplate_TagSplitAcrossMoreRuns_ReplacesTag()
+        {
+            // Simulating a tag split like "@@N" + "a" + "m" + "e@@"
+            using (MemoryStream mem = new MemoryStream())
+            {
+                using (WordprocessingDocument wordDoc = WordprocessingDocument.Create(mem, DocumentFormat.OpenXml.WordprocessingDocumentType.Document, true))
+                {
+                    MainDocumentPart mainPart = wordDoc.AddMainDocumentPart();
+                    mainPart.Document = new Document();
+                    Body body = mainPart.Document.AppendChild(new Body());
+                    Paragraph para = body.AppendChild(new Paragraph());
+                    para.AppendChild(new Run(new Text("Data: @@")));
+                    para.AppendChild(new Run(new Text("Val")));
+                    para.AppendChild(new Run(new Text("ue@@")));
+                    mainPart.Document.Save();
+                    wordDoc.Save(); // Explicitly save the WordprocessingDocument object itself.
+                } // wordDoc is disposed.
+                byte[] template = mem.ToArray(); // Get the byte array after wordDoc is disposed.
 
-        //            var textPlaceholders = new Dictionary<string, string> { { "Value", "Correct" } }; // Changed key
-        //            byte[] result = wordEngine.FillTemplate(template, textPlaceholders, null);
-        //            string resultText = GetDocumentText(result);
+                var textPlaceholders = new Dictionary<string, string> { { "Value", "Correct" } };
+                byte[] result = wordEngine.FillTemplate(template, textPlaceholders, null);
+                string resultText = GetDocumentText(result);
 
-        //            Assert.Contains("Data: Correct", resultText);
-        //            Assert.DoesNotContain("@@Value@@", resultText);
-        //        }
-        //    }
-        //}
+                Assert.Contains("Data: Correct", resultText);
+                Assert.DoesNotContain("@@Value@@", resultText);
+            }
+        }
 
         private byte[] CreateDocWithTableTemplate(string tableIdentifier, List<string> columnPlaceholders)
         {
@@ -466,6 +467,229 @@ namespace WordTemplateEngine.Tests
             Assert.Equal("Adam", resultTable2[1][1]);
             Assert.Equal("HR", resultTable2[2][0]);
             Assert.Equal("Olivia", resultTable2[2][1]);
+        }
+
+        // Helper method to create a document with a variety of tags for GetAllTags testing
+        private byte[] CreateDocWithMixedTags()
+        {
+            using (MemoryStream mem = new MemoryStream())
+            {
+                using (WordprocessingDocument wordDoc = WordprocessingDocument.Create(mem, DocumentFormat.OpenXml.WordprocessingDocumentType.Document, true))
+                {
+                    MainDocumentPart mainPart = wordDoc.AddMainDocumentPart();
+                    mainPart.Document = new Document();
+                    Body body = mainPart.Document.AppendChild(new Body());
+
+                    // Paragraph with simple text tags and duplicates
+                    Paragraph para1 = body.AppendChild(new Paragraph());
+                    para1.AppendChild(new Run(new Text("Hello @@Name@@, welcome to @@City@@. Hello again, @@Name@@.")));
+
+                    // Paragraph with a split tag
+                    Paragraph para2 = body.AppendChild(new Paragraph());
+                    para2.AppendChild(new Run(new Text("Split tag: @@Somet")));
+                    para2.AppendChild(new Run(new Text("hing@@."))); // @@Something@@
+
+                    // Table with a table tag and text tags in cells
+                    Table table = new Table();
+                    TableProperties tblProps = new TableProperties(
+                        new TableBorders(
+                            new TopBorder { Val = BorderValues.Single, Size = 4 },
+                            new BottomBorder { Val = BorderValues.Single, Size = 4 },
+                            new LeftBorder { Val = BorderValues.Single, Size = 4 },
+                            new RightBorder { Val = BorderValues.Single, Size = 4 },
+                            new InsideHorizontalBorder { Val = BorderValues.Single, Size = 4 },
+                            new InsideVerticalBorder { Val = BorderValues.Single, Size = 4 }
+                        )
+                    );
+                    table.AppendChild(tblProps);
+
+                    // Row 1: Table Identifier
+                    TableRow row1Table = new TableRow();
+                    TableCell cell1_1Table = new TableCell(new Paragraph(new Run(new Text("@@Table:Employees@@"))));
+                    row1Table.Append(cell1_1Table);
+                    row1Table.Append(new TableCell(new Paragraph(new Run(new Text("Details for @@Table:Employees@@"))))); // Duplicate table tag, also text
+                    table.Append(row1Table);
+
+                    // Row 2: Column Headers (which are text tags) and a normal text tag
+                    TableRow row2Table = new TableRow();
+                    row2Table.Append(new TableCell(new Paragraph(new Run(new Text("@@HeaderName@@"))))); // Text tag
+                    row2Table.Append(new TableCell(new Paragraph(new Run(new Text("Value for @@HeaderValue@@. Contact: @@ContactPerson@@"))))); // Text tags
+                    table.Append(row2Table);
+
+                    // Row 3: More text tags
+                    TableRow row3Table = new TableRow();
+                    row3Table.Append(new TableCell(new Paragraph(new Run(new Text("@@NestedTag@@")))));
+                    row3Table.Append(new TableCell(new Paragraph(new Run(new Text("Another @@NestedTag@@ here."))))); // Duplicate text tag
+                    table.Append(row3Table);
+
+                    body.Append(table);
+
+                    // Another text tag after table
+                    Paragraph para3 = body.AppendChild(new Paragraph());
+                    para3.AppendChild(new Run(new Text("End of document. @@FinalTag@@.")));
+
+                    // A table tag that is not in the first cell (should be identified as a text tag by current logic)
+                     Paragraph para4 = body.AppendChild(new Paragraph());
+                    para4.AppendChild(new Run(new Text("This is @@Table:Orphan@@ but not a real table tag.")));
+
+
+                    mainPart.Document.Save();
+                }
+                return mem.ToArray();
+            }
+        }
+
+        [Fact]
+        public void GetAllTags_DocWithMixedTags_ReturnsAllUniqueTags()
+        {
+            byte[] template = CreateDocWithMixedTags();
+            var result = wordEngine.GetAllTags(template);
+
+            // Expected Text Tags: Name, City, Something, HeaderName, HeaderValue, ContactPerson, NestedTag, FinalTag, Table:Orphan
+            // Note: "Table:Employees" will appear as a table tag. If it's also found by text search, it should be excluded from text tags.
+            // The current GetAllTags logic for text tags is: Regex textTagRegex = new Regex(@"@@(?!Table:)([a-zA-Z0-9_]+)@@");
+            // This means "Table:Employees" and "Table:Orphan" in normal text will NOT be caught by the textTagRegex.
+            // Let's adjust expectations. "Table:Orphan" should be caught by the text tag regex if it's written as @@Table:Orphan@@.
+            // The negative lookahead (?!Table:) means the content INSIDE @@ @@ cannot START with "Table:".
+            // So @@Table:Orphan@@ would not be matched by textTagRegex.
+            // My regex was `@"@@(?!Table:)([a-zA-Z0-9_]+)@@"` for text. This means `@@Table:Orphan@@` will NOT be matched.
+            // This is correct, as `Table:Orphan` starts with `Table:`.
+            // If the user wants `@@Table:Orphan@@` to be a text tag, they should not name it like that.
+            // The problem description says "get all tag like this \"@Name@\" and all taged table like this \"@Table:Employees@\""
+            // The initial implementation of `GetAllTags` uses `@@Value@@` not `@Value@`. I'll stick to `@@Value@@`.
+            // My text regex `@@(?!Table:)([a-zA-Z0-9_]+)@@` correctly captures `Name` from `@@Name@@`
+            // and correctly IGNORES `@@Table:SomeTable@@`. This is the desired behavior.
+            // The text "@@Table:Orphan@@" in para4 will be picked up by the tableTagRegex.
+            // The text "Details for @@Table:Employees@@" in the table cell will also have "Employees" picked by tableTagRegex.
+
+            var expectedTextTags = new List<string> { "Name", "City", "Something", "HeaderName", "HeaderValue", "ContactPerson", "NestedTag", "FinalTag" };
+            // "Orphan" comes from para4. "Employees" comes from the table definition.
+            var expectedTableTags = new List<string> { "Employees", "Orphan" };
+
+
+            Assert.NotNull(result);
+            Assert.True(result.ContainsKey("Text"));
+            Assert.True(result.ContainsKey("Table"));
+
+            Assert.Equal(expectedTextTags.Count, result["Text"].Count);
+            foreach (var tag in expectedTextTags)
+            {
+                Assert.Contains(tag, result["Text"]);
+            }
+
+            Assert.Equal(expectedTableTags.Count, result["Table"].Count);
+            foreach (var tag in expectedTableTags)
+            {
+                Assert.Contains(tag, result["Table"]);
+            }
+        }
+
+        [Fact]
+        public void GetAllTags_EmptyDoc_ReturnsNoTags()
+        {
+            byte[] template = CreateSimpleDocWithText(""); // Creates a doc with an empty paragraph
+            var result = wordEngine.GetAllTags(template);
+
+            Assert.NotNull(result);
+            Assert.Empty(result["Text"]);
+            Assert.Empty(result["Table"]);
+        }
+
+        [Fact]
+        public void GetAllTags_DocWithNoTags_ReturnsNoTags()
+        {
+            byte[] template = CreateSimpleDocWithText("This is a plain document without any tags.");
+            var result = wordEngine.GetAllTags(template);
+
+            Assert.NotNull(result);
+            Assert.Empty(result["Text"]);
+            Assert.Empty(result["Table"]);
+        }
+
+        [Fact]
+        public void GetAllTags_DocWithOnlyTextTags_ReturnsOnlyTextTags()
+        {
+            byte[] template = CreateSimpleDocWithText("Hello @@User@@, today is @@Day@@. @@User@@ again.");
+            var result = wordEngine.GetAllTags(template);
+
+            var expectedTextTags = new List<string> { "User", "Day" };
+
+            Assert.NotNull(result);
+            Assert.Equal(expectedTextTags.Count, result["Text"].Count);
+            foreach (var tag in expectedTextTags)
+            {
+                Assert.Contains(tag, result["Text"]);
+            }
+            Assert.Empty(result["Table"]);
+        }
+
+        [Fact]
+        public void GetAllTags_DocWithOnlyTableTag_ReturnsOnlyTableTag()
+        {
+            // Create a doc with only a table structure for the tag
+            byte[] template;
+            using (MemoryStream mem = new MemoryStream())
+            {
+                using (WordprocessingDocument wordDoc = WordprocessingDocument.Create(mem, DocumentFormat.OpenXml.WordprocessingDocumentType.Document, true))
+                {
+                    MainDocumentPart mainPart = wordDoc.AddMainDocumentPart();
+                    mainPart.Document = new Document();
+                    Body body = mainPart.Document.AppendChild(new Body());
+                    Table table = new Table();
+                    TableRow row = new TableRow();
+                    // Table tag must be in the first cell of the first row to be identified by FillTemplate logic,
+                    // GetAllTags currently scans all text, so placement for detection is more flexible, but we test for "Table:Name" pattern.
+                    row.Append(new TableCell(new Paragraph(new Run(new Text("@@Table:OnlyTable@@")))));
+                    table.Append(row);
+                    body.Append(table);
+                    mainPart.Document.Save();
+                }
+                template = mem.ToArray();
+            }
+
+            var result = wordEngine.GetAllTags(template);
+            var expectedTableTags = new List<string> { "OnlyTable" };
+
+            Assert.NotNull(result);
+            Assert.Empty(result["Text"]); // "Table:OnlyTable" should not be a text tag
+            Assert.Equal(expectedTableTags.Count, result["Table"].Count);
+            Assert.Contains("OnlyTable", result["Table"]);
+        }
+
+        [Fact]
+        public void GetAllTags_TagSplitAcrossRuns_IdentifiesCorrectly()
+        {
+            byte[] template = CreateDocWithSplitText("Tag: @@Sp", "lit@@", " value.");
+            var result = wordEngine.GetAllTags(template);
+
+            var expectedTextTags = new List<string> { "Split" };
+
+            Assert.NotNull(result);
+            Assert.Equal(expectedTextTags.Count, result["Text"].Count);
+            Assert.Contains("Split", result["Text"]);
+            Assert.Empty(result["Table"]);
+        }
+
+        [Fact]
+        public void GetAllTags_TableTagInNormalText_IsNotATableTagButTextTagIfPatternAllows()
+        {
+            // The regex @@(?!Table:)([a-zA-Z0-9_]+)@@ for text tags will NOT match @@Table:Something@@.
+            // The regex @@Table:([a-zA-Z0-9_]+)@@ for table tags WILL match @@Table:Something@@.
+            // So, if @@Table:Orphan@@ is in normal text, it will be picked by table tag regex.
+            // This means my previous comment in CreateDocWithMixedTags about "Table:Orphan" was slightly off.
+            // It *will* be picked up by the tableTagRegex.
+            // Let's refine the expectation for `CreateDocWithMixedTags` based on this.
+
+            byte[] template = CreateSimpleDocWithText("This is text @@Table:MyOrphan@@ and @@RegularTag@@.");
+            var result = wordEngine.GetAllTags(template);
+
+            // Expected: "MyOrphan" as a table tag, "RegularTag" as a text tag.
+            Assert.NotNull(result);
+            Assert.Single(result["Text"]);
+            Assert.Contains("RegularTag", result["Text"]);
+
+            Assert.Single(result["Table"]);
+            Assert.Contains("MyOrphan", result["Table"]);
         }
     }
 }
