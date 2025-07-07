@@ -470,7 +470,7 @@ namespace WordTemplateEngine.Tests
         }
 
         // Helper method to create a document with a variety of tags for GetAllTags testing
-        private byte[] CreateDocWithMixedTags()
+        private byte[] CreateDocWithMixedTags(bool createTableSpecificFields = true)
         {
             using (MemoryStream mem = new MemoryStream())
             {
@@ -511,15 +511,32 @@ namespace WordTemplateEngine.Tests
                     table.Append(row1Table);
 
                     // Row 2: Column Headers (which are text tags) and a normal text tag
+                    // Row 2: Column Headers (which are text tags)
                     TableRow row2Table = new TableRow();
-                    row2Table.Append(new TableCell(new Paragraph(new Run(new Text("@@HeaderName@@"))))); // Text tag
-                    row2Table.Append(new TableCell(new Paragraph(new Run(new Text("Value for @@HeaderValue@@. Contact: @@ContactPerson@@"))))); // Text tags
+                    if (createTableSpecificFields)
+                    {
+                        row2Table.Append(new TableCell(new Paragraph(new Run(new Text("@@FieldA@@"))))); // Column Field for Employees
+                        row2Table.Append(new TableCell(new Paragraph(new Run(new Text("@@FieldB@@"))))); // Column Field for Employees
+                    }
+                    else // For tests where we don't expect specific fields or testing general text tags
+                    {
+                        row2Table.Append(new TableCell(new Paragraph(new Run(new Text("@@HeaderName@@")))));
+                        row2Table.Append(new TableCell(new Paragraph(new Run(new Text("Value for @@HeaderValue@@. Contact: @@ContactPerson@@")))));
+                    }
                     table.Append(row2Table);
 
-                    // Row 3: More text tags
+                    // Row 3: Data row example (not directly used by GetAllTags for field names)
                     TableRow row3Table = new TableRow();
-                    row3Table.Append(new TableCell(new Paragraph(new Run(new Text("@@NestedTag@@")))));
-                    row3Table.Append(new TableCell(new Paragraph(new Run(new Text("Another @@NestedTag@@ here."))))); // Duplicate text tag
+                    if (createTableSpecificFields)
+                    {
+                        row3Table.Append(new TableCell(new Paragraph(new Run(new Text("DataA1")))));
+                        row3Table.Append(new TableCell(new Paragraph(new Run(new Text("DataB1")))));
+                    }
+                    else
+                    {
+                        row3Table.Append(new TableCell(new Paragraph(new Run(new Text("@@NestedTag@@")))));
+                        row3Table.Append(new TableCell(new Paragraph(new Run(new Text("Another @@NestedTag@@ here.")))));
+                    }
                     table.Append(row3Table);
 
                     body.Append(table);
@@ -540,59 +557,76 @@ namespace WordTemplateEngine.Tests
         }
 
         [Fact]
-        public void GetAllTags_DocWithMixedTags_ReturnsAllUniqueTags()
+        public void GetAllTags_DocWithMixedTags_ReturnsAllUniqueTagsAndFields()
         {
-            byte[] template = CreateDocWithMixedTags();
+            byte[] template = CreateDocWithMixedTags(createTableSpecificFields: true); // Ensure specific fields are created
             var result = wordEngine.GetAllTags(template);
-
-            // Expected Text Tags: Name, City, Something, HeaderName, HeaderValue, ContactPerson, NestedTag, FinalTag, Table:Orphan
-            // Note: "Table:Employees" will appear as a table tag. If it's also found by text search, it should be excluded from text tags.
-            // The current GetAllTags logic for text tags is: Regex textTagRegex = new Regex(@"@@(?!Table:)([a-zA-Z0-9_]+)@@");
-            // This means "Table:Employees" and "Table:Orphan" in normal text will NOT be caught by the textTagRegex.
-            // Let's adjust expectations. "Table:Orphan" should be caught by the text tag regex if it's written as @@Table:Orphan@@.
-            // The negative lookahead (?!Table:) means the content INSIDE @@ @@ cannot START with "Table:".
-            // So @@Table:Orphan@@ would not be matched by textTagRegex.
-            // My regex was `@"@@(?!Table:)([a-zA-Z0-9_]+)@@"` for text. This means `@@Table:Orphan@@` will NOT be matched.
-            // This is correct, as `Table:Orphan` starts with `Table:`.
-            // If the user wants `@@Table:Orphan@@` to be a text tag, they should not name it like that.
-            // The problem description says "get all tag like this \"@Name@\" and all taged table like this \"@Table:Employees@\""
-            // The initial implementation of `GetAllTags` uses `@@Value@@` not `@Value@`. I'll stick to `@@Value@@`.
-            // My text regex `@@(?!Table:)([a-zA-Z0-9_]+)@@` correctly captures `Name` from `@@Name@@`
-            // and correctly IGNORES `@@Table:SomeTable@@`. This is the desired behavior.
-            // The text "@@Table:Orphan@@" in para4 will be picked up by the tableTagRegex.
-            // The text "Details for @@Table:Employees@@" in the table cell will also have "Employees" picked by tableTagRegex.
-
-            var expectedTextTags = new List<string> { "Name", "City", "Something", "HeaderName", "HeaderValue", "ContactPerson", "NestedTag", "FinalTag" };
-            // "Orphan" comes from para4. "Employees" comes from the table definition.
-            var expectedTableTags = new List<string> { "Employees", "Orphan" };
-
 
             Assert.NotNull(result);
             Assert.True(result.ContainsKey("Text"));
             Assert.True(result.ContainsKey("Table"));
 
-            Assert.Equal(expectedTextTags.Count, result["Text"].Count);
+            // Text Tags Assertions
+            var textTags = result["Text"] as List<string>;
+            Assert.NotNull(textTags);
+            var expectedTextTags = new List<string> { "Name", "City", "Something", "FinalTag" };
+            // Tags like HeaderName, ContactPerson, NestedTag are not created when createTableSpecificFields is true
+            // "Table:Orphan" is not a text tag due to the regex `(?!Table:)`
+            Assert.Equal(expectedTextTags.Count, textTags.Count);
             foreach (var tag in expectedTextTags)
             {
-                Assert.Contains(tag, result["Text"]);
+                Assert.Contains(tag, textTags);
             }
 
-            Assert.Equal(expectedTableTags.Count, result["Table"].Count);
-            foreach (var tag in expectedTableTags)
+            // Table Tags Assertions
+            var tableTags = result["Table"] as List<Dictionary<string, List<string>>>;
+            Assert.NotNull(tableTags);
+
+            // Expecting one table "Employees" and potentially "Orphan" if it's picked up by table logic
+            // The current logic for GetAllTags for tables looks for @@Table:Name@@ in the first row of a table.
+            // "@@Table:Orphan@@" in para4 is NOT in a table's first row, so it won't be a table.
+            // "Details for @@Table:Employees@@" in the first row, second cell of the actual table:
+            // The current table name extraction is `Regex tableIdentifierRegex = new Regex(@"^@@Table:([a-zA-Z0-9_]+)@@$");`
+            // This regex requires the *entire cell text* to be the table identifier.
+            // So, "Details for @@Table:Employees@@" will NOT identify "Employees" as a table.
+            // Only "@@Table:Employees@@" in the first cell of the first row will identify the table.
+
+            Assert.Single(tableTags); // Only "Employees" table should be found
+
+            var employeesTable = tableTags.FirstOrDefault(t => t.ContainsKey("Employees"));
+            Assert.NotNull(employeesTable);
+            Assert.True(employeesTable.TryGetValue("Employees", out List<string> employeeFields));
+            Assert.NotNull(employeeFields);
+
+            var expectedEmployeeFields = new List<string> { "FieldA", "FieldB" };
+            Assert.Equal(expectedEmployeeFields.Count, employeeFields.Count);
+            foreach (var field in expectedEmployeeFields)
             {
-                Assert.Contains(tag, result["Table"]);
+                Assert.Contains(field, employeeFields);
             }
+
+            // Verify "Table:Orphan" is not misinterpreted as a table if it's just in text.
+            // And "Table:Employees" from "Details for @@Table:Employees@@" is not a separate table.
+            Assert.Null(tableTags.FirstOrDefault(t => t.ContainsKey("Orphan")));
+            // Ensure no other tables are accidentally picked up.
+            Assert.Equal(1, tableTags.Count(t => t.ContainsKey("Employees")));
+
+
         }
 
         [Fact]
         public void GetAllTags_EmptyDoc_ReturnsNoTags()
         {
-            byte[] template = CreateSimpleDocWithText(""); // Creates a doc with an empty paragraph
+            byte[] template = CreateSimpleDocWithText("");
             var result = wordEngine.GetAllTags(template);
 
             Assert.NotNull(result);
-            Assert.Empty(result["Text"]);
-            Assert.Empty(result["Table"]);
+            var textTags = result["Text"] as List<string>;
+            var tableTags = result["Table"] as List<Dictionary<string, List<string>>>;
+            Assert.NotNull(textTags);
+            Assert.NotNull(tableTags);
+            Assert.Empty(textTags);
+            Assert.Empty(tableTags);
         }
 
         [Fact]
@@ -602,8 +636,12 @@ namespace WordTemplateEngine.Tests
             var result = wordEngine.GetAllTags(template);
 
             Assert.NotNull(result);
-            Assert.Empty(result["Text"]);
-            Assert.Empty(result["Table"]);
+            var textTags = result["Text"] as List<string>;
+            var tableTags = result["Table"] as List<Dictionary<string, List<string>>>;
+            Assert.NotNull(textTags);
+            Assert.NotNull(tableTags);
+            Assert.Empty(textTags);
+            Assert.Empty(tableTags);
         }
 
         [Fact]
@@ -615,19 +653,21 @@ namespace WordTemplateEngine.Tests
             var expectedTextTags = new List<string> { "User", "Day" };
 
             Assert.NotNull(result);
-            Assert.Equal(expectedTextTags.Count, result["Text"].Count);
+            var textTags = result["Text"] as List<string>;
+            var tableTags = result["Table"] as List<Dictionary<string, List<string>>>;
+            Assert.NotNull(textTags);
+            Assert.NotNull(tableTags);
+
+            Assert.Equal(expectedTextTags.Count, textTags.Count);
             foreach (var tag in expectedTextTags)
             {
-                Assert.Contains(tag, result["Text"]);
+                Assert.Contains(tag, textTags);
             }
-            Assert.Empty(result["Table"]);
+            Assert.Empty(tableTags);
         }
 
-        [Fact]
-        public void GetAllTags_DocWithOnlyTableTag_ReturnsOnlyTableTag()
+        private byte[] CreateDocWithSpecificTable(string tableName, List<string> columnFields, bool strictIdentifier = true)
         {
-            // Create a doc with only a table structure for the tag
-            byte[] template;
             using (MemoryStream mem = new MemoryStream())
             {
                 using (WordprocessingDocument wordDoc = WordprocessingDocument.Create(mem, DocumentFormat.OpenXml.WordprocessingDocumentType.Document, true))
@@ -636,28 +676,107 @@ namespace WordTemplateEngine.Tests
                     mainPart.Document = new Document();
                     Body body = mainPart.Document.AppendChild(new Body());
                     Table table = new Table();
-                    TableRow row = new TableRow();
-                    // Table tag must be in the first cell of the first row to be identified by FillTemplate logic,
-                    // GetAllTags currently scans all text, so placement for detection is more flexible, but we test for "Table:Name" pattern.
-                    row.Append(new TableCell(new Paragraph(new Run(new Text("@@Table:OnlyTable@@")))));
-                    table.Append(row);
+
+                    // Row 1: Table Identifier
+                    TableRow row1Table = new TableRow();
+                    string identifierText = strictIdentifier ? $"@@Table:{tableName}@@" : $"This is @@Table:{tableName}@@ in text";
+                    row1Table.Append(new TableCell(new Paragraph(new Run(new Text(identifierText)))));
+                    // Add empty cells if more than one column to simulate merged cell for identifier
+                    if (columnFields.Count > 1)
+                    {
+                        for (int i = 1; i < columnFields.Count; i++) { row1Table.Append(new TableCell(new Paragraph(new Run(new Text(""))))); }
+                    }
+                    table.Append(row1Table);
+
+                    // Row 2: Column Headers
+                    TableRow row2Table = new TableRow();
+                    if (columnFields.Any())
+                    {
+                        foreach (var field in columnFields)
+                        {
+                            row2Table.Append(new TableCell(new Paragraph(new Run(new Text($"@@{field}@@")))));
+                        }
+                    }
+                    else // Add an empty cell if there are no column fields, to make a valid row
+                    {
+                         row2Table.Append(new TableCell(new Paragraph(new Run(new Text("")))));
+                    }
+                    table.Append(row2Table);
                     body.Append(table);
                     mainPart.Document.Save();
                 }
-                template = mem.ToArray();
+                return mem.ToArray();
             }
-
-            var result = wordEngine.GetAllTags(template);
-            var expectedTableTags = new List<string> { "OnlyTable" };
-
-            Assert.NotNull(result);
-            Assert.Empty(result["Text"]); // "Table:OnlyTable" should not be a text tag
-            Assert.Equal(expectedTableTags.Count, result["Table"].Count);
-            Assert.Contains("OnlyTable", result["Table"]);
         }
 
         [Fact]
-        public void GetAllTags_TagSplitAcrossRuns_IdentifiesCorrectly()
+        public void GetAllTags_DocWithOnlyTableTagAndFields_ReturnsCorrectStructure()
+        {
+            string tableName = "Products";
+            var fields = new List<string> { "ID", "ProductName", "Price" };
+            byte[] template = CreateDocWithSpecificTable(tableName, fields);
+
+            var result = wordEngine.GetAllTags(template);
+
+            Assert.NotNull(result);
+            var textTags = result["Text"] as List<string>;
+            var tableTagsList = result["Table"] as List<Dictionary<string, List<string>>>;
+            Assert.NotNull(textTags);
+            Assert.NotNull(tableTagsList);
+
+            Assert.Empty(textTags); // No general text tags expected
+            Assert.Single(tableTagsList); // One table expected
+
+            var tableEntry = tableTagsList.First();
+            Assert.True(tableEntry.ContainsKey(tableName));
+            Assert.Equal(fields.Count, tableEntry[tableName].Count);
+            foreach (var field in fields)
+            {
+                Assert.Contains(field, tableEntry[tableName]);
+            }
+        }
+
+
+        [Fact]
+        public void GetAllTags_TableTagNotStrictlyInCell_IsNotIdentifiedAsTable()
+        {
+            // Identifier is not strictly "@@Table:Name@@" but part of other text in cell
+            byte[] template = CreateDocWithSpecificTable("LooseTable", new List<string> { "Field1" }, strictIdentifier: false);
+            var result = wordEngine.GetAllTags(template);
+
+            Assert.NotNull(result);
+            var tableTagsList = result["Table"] as List<Dictionary<string, List<string>>>;
+            Assert.NotNull(tableTagsList);
+            Assert.Empty(tableTagsList); // No table should be identified due to strict regex ^@@Table:Name@@$
+
+            // It might pick up "Table:LooseTable" as a general text tag if not for the (?!Table:)
+            // Let's check text tags. The regex for text is @@(?!Table:)([a-zA-Z0-9_]+)@@
+            // "This is @@Table:LooseTable@@ in text" -> "Table:LooseTable" will not be a text tag.
+            var textTags = result["Text"] as List<string>;
+            Assert.NotNull(textTags);
+            Assert.Empty(textTags); // Because "Table:LooseTable" is excluded by text regex.
+        }
+
+
+        [Fact]
+        public void GetAllTags_TableWithNoFields_ReturnsTableNameWithEmptyFieldList()
+        {
+            byte[] template = CreateDocWithSpecificTable("EmptyFieldsTable", new List<string>());
+            var result = wordEngine.GetAllTags(template);
+
+            Assert.NotNull(result);
+            var tableTagsList = result["Table"] as List<Dictionary<string, List<string>>>;
+            Assert.NotNull(tableTagsList);
+            Assert.Single(tableTagsList);
+
+            var tableEntry = tableTagsList.First();
+            Assert.True(tableEntry.ContainsKey("EmptyFieldsTable"));
+            Assert.Empty(tableEntry["EmptyFieldsTable"]);
+        }
+
+
+        [Fact]
+        public void GetAllTags_TagSplitAcrossRuns_IdentifiesCorrectlyAsText()
         {
             byte[] template = CreateDocWithSplitText("Tag: @@Sp", "lit@@", " value.");
             var result = wordEngine.GetAllTags(template);
@@ -665,31 +784,38 @@ namespace WordTemplateEngine.Tests
             var expectedTextTags = new List<string> { "Split" };
 
             Assert.NotNull(result);
-            Assert.Equal(expectedTextTags.Count, result["Text"].Count);
-            Assert.Contains("Split", result["Text"]);
-            Assert.Empty(result["Table"]);
+            var textTags = result["Text"] as List<string>;
+            var tableTags = result["Table"] as List<Dictionary<string, List<string>>>;
+            Assert.NotNull(textTags);
+            Assert.NotNull(tableTags);
+
+            Assert.Equal(expectedTextTags.Count, textTags.Count);
+            Assert.Contains("Split", textTags);
+            Assert.Empty(tableTags);
         }
 
         [Fact]
-        public void GetAllTags_TableTagInNormalText_IsNotATableTagButTextTagIfPatternAllows()
+        public void GetAllTags_TableIdentifierInParagraphText_NotATable()
         {
-            // The regex @@(?!Table:)([a-zA-Z0-9_]+)@@ for text tags will NOT match @@Table:Something@@.
-            // The regex @@Table:([a-zA-Z0-9_]+)@@ for table tags WILL match @@Table:Something@@.
-            // So, if @@Table:Orphan@@ is in normal text, it will be picked by table tag regex.
-            // This means my previous comment in CreateDocWithMixedTags about "Table:Orphan" was slightly off.
-            // It *will* be picked up by the tableTagRegex.
-            // Let's refine the expectation for `CreateDocWithMixedTags` based on this.
-
+            // This test ensures that @@Table:Name@@ found in regular paragraph text
+            // (not in the first row/cell of a table) is not identified as a table.
+            // It also won't be a text tag because of the (?!Table:) exclusion.
             byte[] template = CreateSimpleDocWithText("This is text @@Table:MyOrphan@@ and @@RegularTag@@.");
             var result = wordEngine.GetAllTags(template);
 
-            // Expected: "MyOrphan" as a table tag, "RegularTag" as a text tag.
             Assert.NotNull(result);
-            Assert.Single(result["Text"]);
-            Assert.Contains("RegularTag", result["Text"]);
+            var textTags = result["Text"] as List<string>;
+            var tableTagsList = result["Table"] as List<Dictionary<string, List<string>>>;
+            Assert.NotNull(textTags);
+            Assert.NotNull(tableTagsList);
 
-            Assert.Single(result["Table"]);
-            Assert.Contains("MyOrphan", result["Table"]);
+            Assert.Single(textTags);
+            Assert.Contains("RegularTag", textTags);
+            Assert.DoesNotContain("MyOrphan", textTags); // Because it starts with "Table:"
+            Assert.DoesNotContain("Table:MyOrphan", textTags);
+
+
+            Assert.Empty(tableTagsList); // MyOrphan is not in a table structure
         }
     }
 }
