@@ -4,7 +4,9 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 
 Console.WriteLine("Hello, World!");
 
-Test1();
+getAllTags();
+
+//Test1();
 
 //Test2();
 
@@ -88,4 +90,19 @@ static void Test2()
     var word2Pdf = new Word2Pdf();
     word2Pdf.ConvertDocx2Pdf(filledBytes, "d:\\Temp\\doc01_fill1.pdf");
     //File.WriteAllBytes("d:\\Temp\\doc01_fill3.docx", filledBytes);
+}
+
+static void getAllTags()
+{
+
+    var processor = new WordTemplateProcessor();
+    var templateBytes = File.ReadAllBytes("d:\\Temp\\Q01.docx");
+    var tags= processor.GetAllTags(templateBytes);
+    foreach (var tag in tags)
+    {
+        foreach (var value in tag.Value)
+        { 
+           Console.WriteLine($"{tag.Key}:{value}");
+        }
+    }
 }
