@@ -253,12 +253,12 @@ namespace WordTemplateEngine
                 }
             }
         }
-        public Dictionary<string, List<string>> GetAllTags(byte[] templateData)
+        public Dictionary<string, object> GetAllTags(byte[] templateData)
         {
-            var tags = new Dictionary<string, List<string>>
+            var tags = new Dictionary<string, object>
             {
                 { "Text", new List<string>() },
-                { "Table", new List<string>() }
+                { "Table", new List<Dictionary<string, List<string>>>() } // Store table name and its columns
             };
 
             using (MemoryStream mem = new MemoryStream())
@@ -286,57 +286,83 @@ namespace WordTemplateEngine
                         documentTextBuilder.AppendLine(); // Add a separator, helps in distinguishing text from different paragraphs if needed later by regex, though current regex won't use it.
                     }
 
-                    // Extract text from table cells (including the special table name identifier)
+                    // Extract text from all paragraphs for text tags
+                    foreach (var para in body.Descendants<Paragraph>())
+                    {
+                        // Avoid processing paragraphs inside table cells for general text tags,
+                        // as table cell content is handled separately for table structure.
+                        if (para.Ancestors<TableCell>().Any()) continue;
+
+                        foreach (var text in para.Descendants<Text>())
+                        {
+                            documentTextBuilder.Append(text.Text);
+                        }
+                        documentTextBuilder.AppendLine();
+                    }
+                    string nonTableText = documentTextBuilder.ToString();
+
+                    // Process tables for table tags and their column fields
+                    var tableList = (List<Dictionary<string, List<string>>>)tags["Table"];
                     foreach (var table in body.Descendants<Table>())
                     {
-                        foreach (var cell in table.Descendants<TableCell>())
+                        // Check the first row for the table identifier tag: @@Table:TableName@@
+                        var firstRow = table.Elements<TableRow>().FirstOrDefault();
+                        if (firstRow == null) continue;
+
+                        string firstRowText = string.Concat(firstRow.Descendants<Text>().Select(t => t.Text)).Trim();
+                        Regex tableIdentifierRegex = new Regex(@"^@@Table:([a-zA-Z0-9_]+)@@$");
+                        Match tableNameMatch = tableIdentifierRegex.Match(firstRowText);
+
+                        if (tableNameMatch.Success)
                         {
-                            foreach (var para in cell.Descendants<Paragraph>()) // Text in cells is also within Paragraphs
+                            string tableName = tableNameMatch.Groups[1].Value;
+                            List<string> columnFields = new List<string>();
+
+                            // The row after the identifier row is considered the header row for column tags
+                            TableRow? headerRow = table.Elements<TableRow>().ElementAtOrDefault(1);
+                            if (headerRow != null)
                             {
-                                foreach (var text in para.Descendants<Text>())
+                                foreach (var cell in headerRow.Elements<TableCell>())
                                 {
-                                    documentTextBuilder.Append(text.Text);
+                                    // Extract text from cell, assuming tags like @@FieldName@@
+                                    string cellText = string.Concat(cell.Descendants<Text>().Select(t => t.Text)).Trim();
+                                    Regex fieldTagRegex = new Regex(@"^@@([a-zA-Z0-9_]+)@@$");
+                                    Match fieldMatch = fieldTagRegex.Match(cellText);
+                                    if (fieldMatch.Success)
+                                    {
+                                        columnFields.Add(fieldMatch.Groups[1].Value);
+                                    }
+                                    else if (!string.IsNullOrWhiteSpace(cellText) && cellText.StartsWith(fTag) && cellText.EndsWith(tTag))
+                                    {
+                                        // Fallback for simple tags without strict regex match, e.g. @@My Field@@
+                                        columnFields.Add(cellText.Substring(fTag.Length, cellText.Length - fTag.Length - tTag.Length));
+                                    }
                                 }
-                                documentTextBuilder.Append(" "); // Add space between text elements within a cell
                             }
-                            documentTextBuilder.AppendLine(); // Add a separator for cell content
-                        }
-                    }
 
-                    string allDocumentText = documentTextBuilder.ToString();
-
-                    // Regex for table tags: @@Table:TableName@@
-                    // Captures "TableName"
-                    Regex tableTagRegex = new Regex(@"@@Table:([a-zA-Z0-9_]+)@@");
-                    foreach (Match match in tableTagRegex.Matches(allDocumentText).Cast<Match>())
-                    {
-                        if (match.Groups.Count > 1)
-                        {
-                            string tableName = match.Groups[1].Value;
-                            if (!tags["Table"].Contains(tableName))
+                            if (!tableList.Any(t => t.ContainsKey(tableName)))
                             {
-                                tags["Table"].Add(tableName);
+                                tableList.Add(new Dictionary<string, List<string>> { { tableName, columnFields } });
                             }
                         }
                     }
 
-                    // Regex for text tags: @@TagName@@
+                    // Regex for text tags: @@TagName@@ (applied to non-table text)
                     // This regex needs to be careful not to match table tags again.
                     // It captures "TagName" but only if it's not preceded by "Table:".
                     // Using a negative lookbehind for "Table:" inside the @@ @@.
                     // The general pattern is @@Value@@. We want to exclude @@Table:Value@@.
                     // So, Value should not start with "Table:".
                     Regex textTagRegex = new Regex(@"@@(?!Table:)([a-zA-Z0-9_]+)@@");
-                    foreach (Match match in textTagRegex.Matches(allDocumentText).Cast<Match>())
+                    var textList = (List<string>)tags["Text"];
+                    foreach (Match match in textTagRegex.Matches(nonTableText).Cast<Match>())
                     {
                         if (match.Groups.Count > 1)
                         {
                             string tagName = match.Groups[1].Value;
-                            // Ensure it's not an accidental match that should be a table (though regex should prevent)
-                            // and that it's not already listed (which regex doesn't prevent for text tags if table tags are also text tags)
-                            if (!tags["Text"].Contains(tagName) && !tags["Table"].Contains(tagName)) // Ensure it's not also a table name
+                            if (!textList.Contains(tagName))
                             {
-                                tags["Text"].Add(tagName);
+                                textList.Add(tagName);
                             }
                         }
                     }

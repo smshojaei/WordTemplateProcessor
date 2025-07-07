@@ -60,6 +60,43 @@ static void Test1()
     var word2Pdf = new Word2Pdf();
     word2Pdf.ConvertDocx2Pdf(filledBytes, "d:\\Temp\\Q01_o.pdf");
 
+    // Test GetAllTags
+    TestGetAllTags(templateBytes);
+
+}
+
+static void TestGetAllTags(byte[] templateData)
+{
+    Console.WriteLine("\n--- Testing GetAllTags ---");
+    var processor = new WordTemplateProcessor();
+    var allTags = processor.GetAllTags(templateData);
+
+    Console.WriteLine("Text Tags:");
+    if (allTags["Text"] is List<string> textTags)
+    {
+        foreach (var tag in textTags)
+        {
+            Console.WriteLine($"- {tag}");
+        }
+    }
+
+    Console.WriteLine("\nTable Tags:");
+    if (allTags["Table"] is List<Dictionary<string, List<string>>> tableTags)
+    {
+        foreach (var tableDetail in tableTags)
+        {
+            foreach (var entry in tableDetail)
+            {
+                Console.WriteLine($"  Table Name: {entry.Key}");
+                Console.WriteLine("    Fields:");
+                foreach (var field in entry.Value)
+                {
+                    Console.WriteLine($"    - {field}");
+                }
+            }
+        }
+    }
+    Console.WriteLine("--- End of GetAllTags Test ---");
 }
 
 static void Test2()
