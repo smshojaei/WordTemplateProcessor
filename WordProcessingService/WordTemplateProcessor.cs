@@ -1,13 +1,9 @@
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text.RegularExpressions;
 using System.Text; // Added for StringBuilder
+using System.Text.RegularExpressions;
 
-namespace WordTemplateEngine
+namespace WordProcessingService
 {
     public class WordTemplateProcessor
     {
@@ -319,7 +315,7 @@ namespace WordTemplateEngine
                             List<string> columnFields = new List<string>();
 
                             // The row after the identifier row is considered the header row for column tags
-                            TableRow? headerRow = table.Elements<TableRow>().ElementAtOrDefault(1);
+                            TableRow? headerRow = table.Elements<TableRow>().ElementAtOrDefault(2);
                             if (headerRow != null)
                             {
                                 foreach (var cell in headerRow.Elements<TableCell>())

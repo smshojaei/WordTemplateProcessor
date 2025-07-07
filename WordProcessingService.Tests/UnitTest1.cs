@@ -1,11 +1,6 @@
-using Xunit;
-using WordTemplateEngine;
-using System.Collections.Generic;
-using System.IO;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
-using System.Linq;
-using System.Text;
+using WordProcessingService;
 
 namespace WordTemplateEngine.Tests
 {

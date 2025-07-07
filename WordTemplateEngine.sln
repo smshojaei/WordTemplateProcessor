@@ -3,11 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.9.34701.34
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WordTemplateEngine", "WordTemplateEngine\WordTemplateEngine.csproj", "{3338E7D9-BDEE-46D8-8B3B-8CA009069A92}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WordProcessingService", "WordProcessingService\WordProcessingService.csproj", "{C0E557A4-0D6F-427F-B99E-E8C3376CD599}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WordTemplateEngine.Tests", "WordTemplateEngine.Tests\WordTemplateEngine.Tests.csproj", "{B1032B37-9A2C-4938-8872-148217C40429}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WordProcessingService.Console", "WordProcessingService.Console\WordProcessingService.Console.csproj", "{B09B6FEE-F706-482B-98C4-EF576771F279}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WordTemplateEngine.Console", "WordTemplateEngine.Console\WordTemplateEngine.Console.csproj", "{571628C3-3B26-4F93-80F5-44420520E989}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WordProcessingService.Tests", "WordProcessingService.Tests\WordProcessingService.Tests.csproj", "{2D81A40D-8770-4787-8748-F7A19EBFD61D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,18 +15,18 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{3338E7D9-BDEE-46D8-8B3B-8CA009069A92}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{3338E7D9-BDEE-46D8-8B3B-8CA009069A92}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{3338E7D9-BDEE-46D8-8B3B-8CA009069A92}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{3338E7D9-BDEE-46D8-8B3B-8CA009069A92}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B1032B37-9A2C-4938-8872-148217C40429}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B1032B37-9A2C-4938-8872-148217C40429}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B1032B37-9A2C-4938-8872-148217C40429}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B1032B37-9A2C-4938-8872-148217C40429}.Release|Any CPU.Build.0 = Release|Any CPU
-		{571628C3-3B26-4F93-80F5-44420520E989}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{571628C3-3B26-4F93-80F5-44420520E989}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{571628C3-3B26-4F93-80F5-44420520E989}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{571628C3-3B26-4F93-80F5-44420520E989}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C0E557A4-0D6F-427F-B99E-E8C3376CD599}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C0E557A4-0D6F-427F-B99E-E8C3376CD599}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C0E557A4-0D6F-427F-B99E-E8C3376CD599}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C0E557A4-0D6F-427F-B99E-E8C3376CD599}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B09B6FEE-F706-482B-98C4-EF576771F279}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B09B6FEE-F706-482B-98C4-EF576771F279}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B09B6FEE-F706-482B-98C4-EF576771F279}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B09B6FEE-F706-482B-98C4-EF576771F279}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2D81A40D-8770-4787-8748-F7A19EBFD61D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2D81A40D-8770-4787-8748-F7A19EBFD61D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2D81A40D-8770-4787-8748-F7A19EBFD61D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2D81A40D-8770-4787-8748-F7A19EBFD61D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,8 +1,6 @@
 ﻿// See https://aka.ms/new-console-template for more information
-using WordTemplateEngine;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
-Console.WriteLine("Hello, World!");
+using WordProcessingService;
 
 getAllTags();
 
@@ -122,8 +120,8 @@ static void Test2()
     };
 
     var templateBytes = File.ReadAllBytes("d:\\Temp\\doc01.docx");
-    var processor = new WordTemplateProcessor();
-    var filledBytes = processor.FillTemplate(templateBytes, tags, tableData);
+    var wtProcessor = new WordTemplateProcessor();
+    var filledBytes = wtProcessor.FillTemplate(templateBytes, tags, tableData);
     var word2Pdf = new Word2Pdf();
     word2Pdf.ConvertDocx2Pdf(filledBytes, "d:\\Temp\\doc01_fill1.pdf");
     //File.WriteAllBytes("d:\\Temp\\doc01_fill3.docx", filledBytes);
@@ -131,15 +129,29 @@ static void Test2()
 
 static void getAllTags()
 {
-
-    var processor = new WordTemplateProcessor();
+    var wtProcessor = new WordTemplateProcessor();
     var templateBytes = File.ReadAllBytes("d:\\Temp\\Q01.docx");
-    var tags= processor.GetAllTags(templateBytes);
-    foreach (var tag in tags)
+    var tags = wtProcessor.GetAllTags(templateBytes);
+    if (tags["Text"] != null)
     {
-        foreach (var value in tag.Value)
-        { 
-           Console.WriteLine($"{tag.Key}:{value}");
+        foreach (var value in (tags["Text"] as List<string>)!)
+        {
+            Console.WriteLine($"Tag:{value}");
+        }
+    }
+    if (tags["Table"] != null)
+    {
+        foreach (var tables in (tags["Table"] as List<Dictionary<string, List<string>>>)!)
+        {
+            foreach (var table in tables)
+            {
+                Console.WriteLine();
+                Console.WriteLine($"Table:{table.Key}");
+                foreach (var field in table.Value)
+                {
+                    Console.WriteLine($"    {field}");
+                }
+            }
         }
     }
 }

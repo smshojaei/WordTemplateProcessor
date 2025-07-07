@@ -1,16 +1,10 @@
-﻿using Syncfusion.DocIO.DLS;
-using Syncfusion.DocIO;
+﻿using Syncfusion.DocIO;
+using Syncfusion.DocIO.DLS;
 using Syncfusion.DocIORenderer;
-using Syncfusion.Pdf;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Syncfusion.Licensing;
-using System.Runtime.Serialization.Formatters.Binary;
+using Syncfusion.Pdf;
 
-namespace WordTemplateEngine
+namespace WordProcessingService
 {
     public class Word2Pdf
     {
