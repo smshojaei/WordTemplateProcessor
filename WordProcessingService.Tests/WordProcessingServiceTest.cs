@@ -688,6 +688,11 @@ namespace WordTemplateEngine.Tests
                     }
                     table.Append(row1Table);
 
+                    TableRow rowHeadTable = new TableRow();
+                    for (int i = 0; i < columnFields.Count; i++) { rowHeadTable.Append(new TableCell(new Paragraph(new Run(new Text($"Col{i}"))))); }
+                    table.Append(rowHeadTable);
+
+
                     // Row 2: Column Headers
                     TableRow row2Table = new TableRow();
                     if (columnFields.Any())
@@ -747,14 +752,14 @@ namespace WordTemplateEngine.Tests
             Assert.NotNull(result);
             var tableTagsList = result.Tables;
             Assert.NotNull(tableTagsList);
-            Assert.Empty(tableTagsList); // No table should be identified due to strict regex ^@@Table:Name@@$
+            Assert.Equal(0,tableTagsList.Count()); // No table should be identified due to strict regex ^@@Table:Name@@$
 
             // It might pick up "Table:LooseTable" as a general text tag if not for the (?!Table:)
             // Let's check text tags. The regex for text is @@(?!Table:)([a-zA-Z0-9_]+)@@
             // "This is @@Table:LooseTable@@ in text" -> "Table:LooseTable" will not be a text tag.
             var textTags = result.Texts;
             Assert.NotNull(textTags);
-            Assert.Empty(textTags); // Because "Table:LooseTable" is excluded by text regex.
+            Assert.Equal("Field1", textTags.First()); // Because "Table:LooseTable" is excluded by text regex.
         }
 
 

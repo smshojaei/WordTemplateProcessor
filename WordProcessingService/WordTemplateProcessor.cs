@@ -356,7 +356,7 @@ namespace WordProcessingService
                         if (match.Groups.Count > 1)
                         {
                             string tagName = match.Groups[1].Value;
-                            if (!textList.Contains(tagName))
+                            if (!textList.Contains(tagName) && !tags.Tables.SelectMany(c=>c.Values).SelectMany(c=>c).Any(c=>c == tagName))
                             {
                                 textList.Add(tagName);
                             }
