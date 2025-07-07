@@ -274,5 +274,97 @@ namespace WordTemplateEngine
                 }
             }
         }
+
+        public Dictionary<string, List<string>> GetAllTags(byte[] templateData)
+        {
+            var tags = new Dictionary<string, List<string>>
+            {
+                { "Text", new List<string>() },
+                { "Table", new List<string>() }
+            };
+
+            using (MemoryStream mem = new MemoryStream())
+            {
+                mem.Write(templateData, 0, templateData.Length);
+                using (WordprocessingDocument wordDoc = WordprocessingDocument.Open(mem, false)) // Open in read-only mode
+                {
+                    MainDocumentPart? mainPart = wordDoc.MainDocumentPart;
+                    if (mainPart == null || mainPart.Document == null || mainPart.Document.Body == null)
+                    {
+                        // Document is empty or malformed in a way that we can't process it.
+                        return tags;
+                    }
+
+                    Body body = mainPart.Document.Body;
+                    StringBuilder documentTextBuilder = new StringBuilder();
+
+                    // Extract text from all paragraphs
+                    foreach (var para in body.Descendants<Paragraph>())
+                    {
+                        foreach (var text in para.Descendants<Text>())
+                        {
+                            documentTextBuilder.Append(text.Text);
+                        }
+                        documentTextBuilder.AppendLine(); // Add a separator, helps in distinguishing text from different paragraphs if needed later by regex, though current regex won't use it.
+                    }
+
+                    // Extract text from table cells (including the special table name identifier)
+                    foreach (var table in body.Descendants<Table>())
+                    {
+                        foreach (var cell in table.Descendants<TableCell>())
+                        {
+                            foreach (var para in cell.Descendants<Paragraph>()) // Text in cells is also within Paragraphs
+                            {
+                                foreach (var text in para.Descendants<Text>())
+                                {
+                                    documentTextBuilder.Append(text.Text);
+                                }
+                                documentTextBuilder.Append(" "); // Add space between text elements within a cell
+                            }
+                            documentTextBuilder.AppendLine(); // Add a separator for cell content
+                        }
+                    }
+
+                    string allDocumentText = documentTextBuilder.ToString();
+
+                    // Regex for table tags: @@Table:TableName@@
+                    // Captures "TableName"
+                    Regex tableTagRegex = new Regex(@"@@Table:([a-zA-Z0-9_]+)@@");
+                    foreach (Match match in tableTagRegex.Matches(allDocumentText).Cast<Match>())
+                    {
+                        if (match.Groups.Count > 1)
+                        {
+                            string tableName = match.Groups[1].Value;
+                            if (!tags["Table"].Contains(tableName))
+                            {
+                                tags["Table"].Add(tableName);
+                            }
+                        }
+                    }
+
+                    // Regex for text tags: @@TagName@@
+                    // This regex needs to be careful not to match table tags again.
+                    // It captures "TagName" but only if it's not preceded by "Table:".
+                    // Using a negative lookbehind for "Table:" inside the @@ @@.
+                    // The general pattern is @@Value@@. We want to exclude @@Table:Value@@.
+                    // So, Value should not start with "Table:".
+                    Regex textTagRegex = new Regex(@"@@(?!Table:)([a-zA-Z0-9_]+)@@");
+                    foreach (Match match in textTagRegex.Matches(allDocumentText).Cast<Match>())
+                    {
+                        if (match.Groups.Count > 1)
+                        {
+                            string tagName = match.Groups[1].Value;
+                            // Ensure it's not an accidental match that should be a table (though regex should prevent)
+                            // and that it's not already listed (which regex doesn't prevent for text tags if table tags are also text tags)
+                            if (!tags["Text"].Contains(tagName) && !tags["Table"].Contains(tagName)) // Ensure it's not also a table name
+                            {
+                                tags["Text"].Add(tagName);
+                            }
+                        }
+                    }
+                }
+            }
+            return tags;
+        }
     }
 }
