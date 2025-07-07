@@ -2,9 +2,8 @@
 
 using WordProcessingService;
 
-getAllTags();
 
-//Test1();
+Test1();
 
 //Test2();
 
@@ -72,27 +71,21 @@ static void TestGetAllTags(byte[] templateData)
     var allTags = processor.GetAllTags(templateData);
 
     Console.WriteLine("Text Tags:");
-    if (allTags["Text"] is List<string> textTags)
+    foreach (var tag in allTags.Texts)
     {
-        foreach (var tag in textTags)
-        {
-            Console.WriteLine($"- {tag}");
-        }
+        Console.WriteLine($"- {tag}");
     }
 
     Console.WriteLine("\nTable Tags:");
-    if (allTags["Table"] is List<Dictionary<string, List<string>>> tableTags)
+    foreach (var tableDetail in allTags.Tables)
     {
-        foreach (var tableDetail in tableTags)
+        foreach (var entry in tableDetail)
         {
-            foreach (var entry in tableDetail)
+            Console.WriteLine($"  Table Name: {entry.Key}");
+            Console.WriteLine("    Fields:");
+            foreach (var field in entry.Value)
             {
-                Console.WriteLine($"  Table Name: {entry.Key}");
-                Console.WriteLine("    Fields:");
-                foreach (var field in entry.Value)
-                {
-                    Console.WriteLine($"    - {field}");
-                }
+                Console.WriteLine($"    - {field}");
             }
         }
     }
@@ -125,33 +118,4 @@ static void Test2()
     var word2Pdf = new Word2Pdf();
     word2Pdf.ConvertDocx2Pdf(filledBytes, "d:\\Temp\\doc01_fill1.pdf");
     //File.WriteAllBytes("d:\\Temp\\doc01_fill3.docx", filledBytes);
-}
-
-static void getAllTags()
-{
-    var wtProcessor = new WordTemplateProcessor();
-    var templateBytes = File.ReadAllBytes("d:\\Temp\\Q01.docx");
-    var tags = wtProcessor.GetAllTags(templateBytes);
-    if (tags["Text"] != null)
-    {
-        foreach (var value in (tags["Text"] as List<string>)!)
-        {
-            Console.WriteLine($"Tag:{value}");
-        }
-    }
-    if (tags["Table"] != null)
-    {
-        foreach (var tables in (tags["Table"] as List<Dictionary<string, List<string>>>)!)
-        {
-            foreach (var table in tables)
-            {
-                Console.WriteLine();
-                Console.WriteLine($"Table:{table.Key}");
-                foreach (var field in table.Value)
-                {
-                    Console.WriteLine($"    {field}");
-                }
-            }
-        }
-    }
 }

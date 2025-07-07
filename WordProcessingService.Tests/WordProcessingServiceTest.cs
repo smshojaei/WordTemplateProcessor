@@ -4,7 +4,7 @@ using WordProcessingService;
 
 namespace WordTemplateEngine.Tests
 {
-    public class UnitTest1
+    public class WordProcessingServiceTest
     {
         private WordTemplateProcessor wordEngine = new WordTemplateProcessor();
 
@@ -502,8 +502,13 @@ namespace WordTemplateEngine.Tests
                     TableRow row1Table = new TableRow();
                     TableCell cell1_1Table = new TableCell(new Paragraph(new Run(new Text("@@Table:Employees@@"))));
                     row1Table.Append(cell1_1Table);
-                    row1Table.Append(new TableCell(new Paragraph(new Run(new Text("Details for @@Table:Employees@@"))))); // Duplicate table tag, also text
+                    //row1Table.Append(new TableCell(new Paragraph(new Run(new Text("Details for @@Table:Employees@@"))))); // Duplicate table tag, also text
                     table.Append(row1Table);
+
+                    TableRow rowHeadTable = new TableRow();
+                    rowHeadTable.Append(new TableCell(new Paragraph(new Run(new Text("Col1"))))); // Duplicate table tag, also text
+                    rowHeadTable.Append(new TableCell(new Paragraph(new Run(new Text("Col2"))))); // Duplicate table tag, also text
+                    table.Append(rowHeadTable);
 
                     // Row 2: Column Headers (which are text tags) and a normal text tag
                     // Row 2: Column Headers (which are text tags)
@@ -558,11 +563,11 @@ namespace WordTemplateEngine.Tests
             var result = wordEngine.GetAllTags(template);
 
             Assert.NotNull(result);
-            Assert.True(result.ContainsKey("Text"));
-            Assert.True(result.ContainsKey("Table"));
+            Assert.True(result.Texts.Any());
+            Assert.True(result.Tables.Any());
 
             // Text Tags Assertions
-            var textTags = result["Text"] as List<string>;
+            var textTags = result.Texts;
             Assert.NotNull(textTags);
             var expectedTextTags = new List<string> { "Name", "City", "Something", "FinalTag" };
             // Tags like HeaderName, ContactPerson, NestedTag are not created when createTableSpecificFields is true
@@ -574,7 +579,7 @@ namespace WordTemplateEngine.Tests
             }
 
             // Table Tags Assertions
-            var tableTags = result["Table"] as List<Dictionary<string, List<string>>>;
+            var tableTags = result.Tables;
             Assert.NotNull(tableTags);
 
             // Expecting one table "Employees" and potentially "Orphan" if it's picked up by table logic
@@ -616,8 +621,8 @@ namespace WordTemplateEngine.Tests
             var result = wordEngine.GetAllTags(template);
 
             Assert.NotNull(result);
-            var textTags = result["Text"] as List<string>;
-            var tableTags = result["Table"] as List<Dictionary<string, List<string>>>;
+            var textTags = result.Texts;
+            var tableTags = result.Tables;
             Assert.NotNull(textTags);
             Assert.NotNull(tableTags);
             Assert.Empty(textTags);
@@ -631,8 +636,8 @@ namespace WordTemplateEngine.Tests
             var result = wordEngine.GetAllTags(template);
 
             Assert.NotNull(result);
-            var textTags = result["Text"] as List<string>;
-            var tableTags = result["Table"] as List<Dictionary<string, List<string>>>;
+            var textTags = result.Texts;
+            var tableTags = result.Tables;
             Assert.NotNull(textTags);
             Assert.NotNull(tableTags);
             Assert.Empty(textTags);
@@ -648,8 +653,8 @@ namespace WordTemplateEngine.Tests
             var expectedTextTags = new List<string> { "User", "Day" };
 
             Assert.NotNull(result);
-            var textTags = result["Text"] as List<string>;
-            var tableTags = result["Table"] as List<Dictionary<string, List<string>>>;
+            var textTags = result.Texts;
+            var tableTags = result.Tables;
             Assert.NotNull(textTags);
             Assert.NotNull(tableTags);
 
@@ -714,8 +719,8 @@ namespace WordTemplateEngine.Tests
             var result = wordEngine.GetAllTags(template);
 
             Assert.NotNull(result);
-            var textTags = result["Text"] as List<string>;
-            var tableTagsList = result["Table"] as List<Dictionary<string, List<string>>>;
+            var textTags = result.Texts;
+            var tableTagsList = result.Tables;
             Assert.NotNull(textTags);
             Assert.NotNull(tableTagsList);
 
@@ -740,14 +745,14 @@ namespace WordTemplateEngine.Tests
             var result = wordEngine.GetAllTags(template);
 
             Assert.NotNull(result);
-            var tableTagsList = result["Table"] as List<Dictionary<string, List<string>>>;
+            var tableTagsList = result.Tables;
             Assert.NotNull(tableTagsList);
             Assert.Empty(tableTagsList); // No table should be identified due to strict regex ^@@Table:Name@@$
 
             // It might pick up "Table:LooseTable" as a general text tag if not for the (?!Table:)
             // Let's check text tags. The regex for text is @@(?!Table:)([a-zA-Z0-9_]+)@@
             // "This is @@Table:LooseTable@@ in text" -> "Table:LooseTable" will not be a text tag.
-            var textTags = result["Text"] as List<string>;
+            var textTags = result.Texts;
             Assert.NotNull(textTags);
             Assert.Empty(textTags); // Because "Table:LooseTable" is excluded by text regex.
         }
@@ -760,7 +765,7 @@ namespace WordTemplateEngine.Tests
             var result = wordEngine.GetAllTags(template);
 
             Assert.NotNull(result);
-            var tableTagsList = result["Table"] as List<Dictionary<string, List<string>>>;
+            var tableTagsList = result.Tables;
             Assert.NotNull(tableTagsList);
             Assert.Single(tableTagsList);
 
@@ -779,8 +784,8 @@ namespace WordTemplateEngine.Tests
             var expectedTextTags = new List<string> { "Split" };
 
             Assert.NotNull(result);
-            var textTags = result["Text"] as List<string>;
-            var tableTags = result["Table"] as List<Dictionary<string, List<string>>>;
+            var textTags = result.Texts;
+            var tableTags = result.Tables;
             Assert.NotNull(textTags);
             Assert.NotNull(tableTags);
 
@@ -799,8 +804,8 @@ namespace WordTemplateEngine.Tests
             var result = wordEngine.GetAllTags(template);
 
             Assert.NotNull(result);
-            var textTags = result["Text"] as List<string>;
-            var tableTagsList = result["Table"] as List<Dictionary<string, List<string>>>;
+            var textTags = result.Texts;
+            var tableTagsList = result.Tables;
             Assert.NotNull(textTags);
             Assert.NotNull(tableTagsList);
 

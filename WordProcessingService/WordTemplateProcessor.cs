@@ -5,42 +5,11 @@ using System.Text.RegularExpressions;
 
 namespace WordProcessingService
 {
-    public class WordTemplateProcessor
+    public class WordTemplateProcessor : IWordTemplateProcessor
     {
         const string fTag = "@@";
         const string tTag = "@@";
 
-        public byte[] FillTemplate(byte[] templateData, Dictionary<string, string>? textPlaceholders, Dictionary<string, List<Dictionary<string, string>>>? tablePlaceholders)
-        {
-            using (MemoryStream mem = new MemoryStream())
-            {
-                mem.Write(templateData, 0, templateData.Length);
-                using (WordprocessingDocument wordDoc = WordprocessingDocument.Open(mem, true))
-                {
-                    MainDocumentPart? mainPart = wordDoc.MainDocumentPart;
-                    if (mainPart == null) return mem.ToArray(); // Or throw exception
-
-                    Document? document = mainPart.Document;
-                    if (document == null) return mem.ToArray(); // Or throw exception
-
-                    Body? body = document.Body;
-                    if (body == null) return mem.ToArray(); // Or throw exception
-
-                    // Process text placeholders
-                    if (textPlaceholders != null && textPlaceholders.Any())
-                    {
-                        replaceTextPlaceholders(body, textPlaceholders);
-                    }
-
-                    // Process table placeholders
-                    if (tablePlaceholders != null && tablePlaceholders.Any())
-                    {
-                        replaceTablePlaceholders(wordDoc, tablePlaceholders);
-                    }
-                }
-                return mem.ToArray();
-            }
-        }
         private void replaceTextPlaceholders(Body body, Dictionary<string, string> placeholders)
         {
             if (placeholders == null || !placeholders.Any()) return;
@@ -235,7 +204,7 @@ namespace WordProcessingService
                                 foreach (Paragraph para in paragraphs)
                                 {
                                     paragraphTextReplacement(para, dataRow);
-                                } 
+                                }
                             }
                             if (cell.InnerText.Contains($"{fTag}") || cell.InnerText.Contains($"{tTag}"))
                             {
@@ -249,12 +218,43 @@ namespace WordProcessingService
                 }
             }
         }
-        public Dictionary<string, object> GetAllTags(byte[] templateData)
+        public byte[] FillTemplate(byte[] templateData, Dictionary<string, string>? textPlaceholders, Dictionary<string, List<Dictionary<string, string>>>? tablePlaceholders)
         {
-            var tags = new Dictionary<string, object>
+            using (MemoryStream mem = new MemoryStream())
             {
-                { "Text", new List<string>() },
-                { "Table", new List<Dictionary<string, List<string>>>() } // Store table name and its columns
+                mem.Write(templateData, 0, templateData.Length);
+                using (WordprocessingDocument wordDoc = WordprocessingDocument.Open(mem, true))
+                {
+                    MainDocumentPart? mainPart = wordDoc.MainDocumentPart;
+                    if (mainPart == null) return mem.ToArray(); // Or throw exception
+
+                    Document? document = mainPart.Document;
+                    if (document == null) return mem.ToArray(); // Or throw exception
+
+                    Body? body = document.Body;
+                    if (body == null) return mem.ToArray(); // Or throw exception
+
+                    // Process text placeholders
+                    if (textPlaceholders != null && textPlaceholders.Any())
+                    {
+                        replaceTextPlaceholders(body, textPlaceholders);
+                    }
+
+                    // Process table placeholders
+                    if (tablePlaceholders != null && tablePlaceholders.Any())
+                    {
+                        replaceTablePlaceholders(wordDoc, tablePlaceholders);
+                    }
+                }
+                return mem.ToArray();
+            }
+        }
+        public WordTemplateTagDto GetAllTags(byte[] templateData)
+        {
+            var tags = new WordTemplateTagDto()
+            {
+                Texts = new List<string>(),
+                Tables = new List<Dictionary<string, List<string>>>() // Store table name and its columns
             };
 
             using (MemoryStream mem = new MemoryStream())
@@ -298,7 +298,7 @@ namespace WordProcessingService
                     string nonTableText = documentTextBuilder.ToString();
 
                     // Process tables for table tags and their column fields
-                    var tableList = (List<Dictionary<string, List<string>>>)tags["Table"];
+                    var tableList = tags.Tables;
                     foreach (var table in body.Descendants<Table>())
                     {
                         // Check the first row for the table identifier tag: @@Table:TableName@@
@@ -350,7 +350,7 @@ namespace WordProcessingService
                     // The general pattern is @@Value@@. We want to exclude @@Table:Value@@.
                     // So, Value should not start with "Table:".
                     Regex textTagRegex = new Regex(@"@@(?!Table:)([a-zA-Z0-9_]+)@@");
-                    var textList = (List<string>)tags["Text"];
+                    var textList = tags.Texts;
                     foreach (Match match in textTagRegex.Matches(nonTableText).Cast<Match>())
                     {
                         if (match.Groups.Count > 1)
