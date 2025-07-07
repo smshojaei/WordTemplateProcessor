@@ -4,35 +4,12 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 
 Console.WriteLine("Hello, World!");
 
-var processor = new WordTemplateProcessor();
+Test1();
 
-var templateBytes = File.ReadAllBytes("d:\\Temp\\doc01.docx");
+//Test2();
 
-var tags = new Dictionary<string, string>
-{
-    { "Name", "محسن" },
-    { "Date", "1403/04/14" }
-};
 
-var tableData = new Dictionary<string, List<Dictionary<string, string>>>
-{
-    ["Employees"] = new List<Dictionary<string, string>>
-    {
-        new() { ["EName"] = "علی", ["EAge"] = "40", ["ERemark"] = "این برای تست 123 است." },
-        new() { ["EName"] = "سارا", ["EAge"] = "30" },
-        new() { ["EName"] = "علی", ["EAge"] = "40", ["ERemark"] = "این برای تست 123 است." },
-        new() { ["EName"] = "علی", ["EAge"] = "40", ["ERemark"] = "این برای تست 123 است." },
-        new() { ["EName"] = "علی", ["EAge"] = "40", ["ERemark"] = "این برای تست 123 است." }
-    }
-};
-
-//var filledBytes = processor.FillTemplate(templateBytes, tags, tableData);
-//var word2Pdf = new Word2Pdf();
-//word2Pdf.ConvertDocx2Pdf(filledBytes, "d:\\Temp\\doc01_fill1.pdf");
-////File.WriteAllBytes("d:\\Temp\\doc01_fill3.docx", filledBytes);
-q1();
-
-void q1()
+static void Test1()
 {
     var tags = new Dictionary<string, string>
     {
@@ -77,6 +54,7 @@ void q1()
         }
     };
 
+    var processor = new WordTemplateProcessor();
     var templateBytes = File.ReadAllBytes("d:\\Temp\\Q01.docx");
     var filledBytes = processor.FillTemplate(templateBytes, tags, tableData);
     var word2Pdf = new Word2Pdf();
@@ -84,3 +62,30 @@ void q1()
 
 }
 
+static void Test2()
+{
+    var tags = new Dictionary<string, string>
+{
+    { "Name", "محسن" },
+    { "Date", "1403/04/14" }
+};
+
+    var tableData = new Dictionary<string, List<Dictionary<string, string>>>
+    {
+        ["Employees"] = new List<Dictionary<string, string>>
+    {
+        new() { ["EName"] = "علی", ["EAge"] = "40", ["ERemark"] = "این برای تست 123 است." },
+        new() { ["EName"] = "سارا", ["EAge"] = "30" },
+        new() { ["EName"] = "علی", ["EAge"] = "40", ["ERemark"] = "این برای تست 123 است." },
+        new() { ["EName"] = "علی", ["EAge"] = "40", ["ERemark"] = "این برای تست 123 است." },
+        new() { ["EName"] = "علی", ["EAge"] = "40", ["ERemark"] = "این برای تست 123 است." }
+    }
+    };
+
+    var templateBytes = File.ReadAllBytes("d:\\Temp\\doc01.docx");
+    var processor = new WordTemplateProcessor();
+    var filledBytes = processor.FillTemplate(templateBytes, tags, tableData);
+    var word2Pdf = new Word2Pdf();
+    word2Pdf.ConvertDocx2Pdf(filledBytes, "d:\\Temp\\doc01_fill1.pdf");
+    //File.WriteAllBytes("d:\\Temp\\doc01_fill3.docx", filledBytes);
+}
